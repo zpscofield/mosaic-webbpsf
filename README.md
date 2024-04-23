@@ -1,4 +1,4 @@
-# YOUNG WebbPSF Modeling
+# Yonsei Observable UNiverse Group (YOUNG) WebbPSF Modeling
 
 A simplified implementation of the WebbPSF simulation, intended to be used for weak gravitational lensing analysis.
 

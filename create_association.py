@@ -56,4 +56,4 @@ def create_custom_association(filter_dir, output_filename, program, target, inst
     with open(output_filename, 'w') as f:
         json.dump(association, f, indent=4)
 
-# It is important to make sure that the filter_dir is filled with exposures using the same filter which contributed to a mosaic image.
+# It is important to make sure that the filter_dir is filled with exposures of the same filter corresponding to the mosaic image.

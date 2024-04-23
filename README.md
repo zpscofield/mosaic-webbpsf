@@ -5,8 +5,11 @@ A simplified implementation of the WebbPSF simulation, intended to be used for w
 ## What this implementation does
 
 - Takes a catalog of source positions as input, with this catalog having the SExtractor keys "XWIN_IMAGE" and "YWIN_IMAGE."
-    - Note that even though the key format is the same as *SExtractor*, the catalog should not be a *SExtractor* catalog. Instead, the catalog should be an Astropy table saved in ASCII format.
-    - For example, one might open a *SExtractor* catalog with "data = fits.open('/path/to/file.cat')[2].data. The catalog to be used for WebbPSF modeling should be saved as "catalog = Table(data[selected_sources]) -> catalog.write('final_catalog.cat', format='ascii', overwrite=True). Here, "selected_sources" would be the indices of sources selected as background sources.
+    - Note that even though the key format is the same as [*SExtractor*](https://sextractor.readthedocs.io/en/latest/Introduction.html), the catalog should not be a *SExtractor* catalog. Instead, the catalog should be an Astropy table saved in ASCII format.
+    - For example, one might open a *SExtractor* catalog with "data = fits.open('/path/to/file.cat')[2].data. The catalog to be used for WebbPSF modeling should be saved as follows:
+        - catalog = Table(data[selected_sources]) 
+        - catalog.write('final_catalog.cat', format='ascii', overwrite=True) 
+        - Here, "selected_sources" would be the indices of sources selected as background sources.
 - Produces a PSF at each source position which is the exposure time-weighted combination of PSFs from each relevant input exposure. Proper rotations, pixel scales, and observation dates are taken into account.
     - Note that the final PSFs are smoothed to better match the size of observed stars. Currently, this sigma value should be determined empirically on a case-by-case basis. It should be based on a statistical comparison between the sizes of stars in the field and the WebbPSF simulated PSFs. However, a value of around 0.8 has proven to be applicable in various observations so far. 
 - Saves the PSFs in the same order as the input catalog file.

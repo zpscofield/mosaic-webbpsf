@@ -2,7 +2,7 @@
 
 A simplified implementation of the WebbPSF simulation, intended to be used for weak gravitational lensing analysis.
 
-## What this implementation does
+## What this WebbPSF implementation does
 
 - Takes a catalog of source positions as input, with this catalog having the SExtractor keys "XWIN_IMAGE" and "YWIN_IMAGE."
     - Note that even though the key format is the same as [*SExtractor*](https://sextractor.readthedocs.io/en/latest/Introduction.html), the catalog should not be a *SExtractor* catalog. Instead, the catalog should be an Astropy table saved in ASCII format.
@@ -14,6 +14,7 @@ A simplified implementation of the WebbPSF simulation, intended to be used for w
     - Note that the final PSFs are smoothed to better match the size of observed stars. Currently, this sigma value should be determined empirically on a case-by-case basis. It should be based on a statistical comparison between the sizes of stars in the field and the WebbPSF simulated PSFs. However, a value of around 0.8 has proven to be applicable in various observations so far. 
 - Saves the PSFs in the same order as the input catalog file.
 - Utilizes MPI to significantly speed up the simulation process.
+- Uses an Optical Path Difference (OPD) map caching process to prevent redundant API calls across multiple MPI processes. If multiple processes attempt to download the same OPD map simultaneously, the modeling process will fail. Even if the relevant OPD map is already downloaded onto the user's computer, the *load_wss_opd_by_date()* method will still call the API. This can significantly slow down the modeling process or cause it to fail when using a considerable number of processes. The *load_opd_map()* method addresses these issues by ensuring that each OPD map is loaded only once by the root process (rank 0) and shared to the other processes. Caching the OPD maps in this way prevents any data access conflicts and significantly reduces the execution time.
 
 ## Installation and Requirements
 

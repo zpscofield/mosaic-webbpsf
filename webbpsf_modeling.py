@@ -3,7 +3,7 @@
 import numpy as np
 import copy as cp
 import os
-os.environ['CRDS_PATH'] = '/path/to/crds_cache' # Replace with directory of your own crds_cache folder
+os.environ['CRDS_PATH'] = '/path/to/crds_cache' # Replace with the path of your own crds_cache directory
 os.environ['CRDS_SERVER_URL'] = 'https://jwst-crds.stsci.edu'
 import glob
 import json

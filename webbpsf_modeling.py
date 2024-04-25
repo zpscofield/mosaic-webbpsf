@@ -161,22 +161,7 @@ def image_attributes(mosaic_img_path, catalog_path):
     # Load mosaic image and context data, which is the third extension of an i2d.fits file from the JWST pipeline.
     with fits.open(mosaic_img_path) as mosaic_img:
         mosaic_context = mosaic_img[3].data
-        mosaic_wcs = WCS(mosaic_img[1].header) # WCS information is contained  in the second header for JWST data.
-
-        # Gather WCS header information to use for resampling
-        naxis1 = mosaic_img[1].header.get('NAXIS1', 'Unknown')
-        naxis2 = mosaic_img[1].header.get('NAXIS2', 'Unknown')
-        crpix1 = mosaic_img[1].header.get('CRPIX1', 'Unknown')
-        crpix2 = mosaic_img[1].header.get('CRPIX2', 'Unknown')
-        crval1 = mosaic_img[1].header.get('CRVAL1', 'Unknown')
-        crval2 = mosaic_img[1].header.get('CRVAL2', 'Unknown')
-
-    # This information is currently not required, but was required when any resampling was done in previous versions.
-    # It has been found that attempting to replicate the resampling process for use in combination with WebbPSF does
-    # not produce good results, so image_dimensions, crpix, and crval are no longer required.
-    image_dimensions = [int(naxis1), int(naxis2)]
-    crpix = [float(crpix1), float(crpix2)]
-    crval = [float(crval1), float(crval2)]
+        mosaic_wcs = WCS(mosaic_img[1].header) # WCS information is contained in the second header for JWST data.
 
     # Loading coordinates from a catalog file
     cat = ascii.read(catalog_path)
@@ -187,7 +172,7 @@ def image_attributes(mosaic_img_path, catalog_path):
     # Combine the selected coordinates into an array
     mosaic_gal_coord = np.vstack((x_coords, y_coords)).T # Usually selected_ but I want to use all stars for SMACS.
 
-    return mosaic_context, mosaic_wcs, image_dimensions, crpix, crval, mosaic_gal_coord
+    return mosaic_context, mosaic_wcs, mosaic_gal_coord
 
 def assign_coordinates(mosaic_gal_coord, mosaic_context, mosaic_wcs, json_path):
 
@@ -293,21 +278,15 @@ def main():
     # For efficiency, only access data on rank 0 (one process), then broadcast the information to other processes.
     if rank == 0:
         print_title()
-        mosaic_context, mosaic_wcs, image_dimensions, crpix, crval, mosaic_gal_coord = image_attributes(img_path, catalog_path)
+        mosaic_context, mosaic_wcs, mosaic_gal_coord = image_attributes(img_path, catalog_path)
         exp_cal_coords_dict = assign_coordinates(mosaic_gal_coord, mosaic_context, mosaic_wcs, json_path)
     else:
         mosaic_gal_coord = None
         exp_cal_coords_dict = None
-        image_dimensions = None
-        crpix = None
-        crval = None
 
     # Broadcast necessary information from rank 0 to other ranks.
     mosaic_gal_coord = comm.bcast(mosaic_gal_coord, root=0)
     exp_cal_coords_dict = comm.bcast(exp_cal_coords_dict, root=0)
-    image_dimensions = comm.bcast(image_dimensions, root=0)
-    crpix = comm.bcast(crpix, root=0)
-    crval = comm.bcast(crval, root=0)
 
     # Initialize the OPD map cache for each process.
     opd_map_cache = {}

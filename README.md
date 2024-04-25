@@ -28,7 +28,7 @@ Finally, the user must have *mpi4py* installed to use this code. The following c
 
 ## Usage
 
-Once the input files have been prepared, the *img_path*, *catalog_path*, and *json_path* variables must be changed to match the user's setup. The *psf_array_filename* and *sigma* variables can also be changed as needed, where the *sigma* variable determines the Gaussian smoothing kernel sigma to use. 
+Once the input files have been prepared, the *img_path*, *catalog_path*, and *json_path* variables must be changed to match the user's setup. The *psf_array_filename* and *sigma* variables can also be changed as needed, where the *sigma* variable determines the Gaussian smoothing kernel sigma to use. The *pixel_scale* variable should be changed to match the pixel scale of the mosaic image. 
 
 Then, the code can be run as follows:
 - $ mpiexec -n num_proc python webbpsf_modeling.py

@@ -70,7 +70,7 @@ def load_opd_map(nrc, date, opd_map_cache):
         nrc.pupilopd = opd_map_cache[date]
 
 # Function to simulate PSF for a given coordinate
-def simulate_psf(mosaic_coord, exp_cal_coords_dict, fov, opd_map_cache, sigma):
+def simulate_psf(mosaic_coord, exp_cal_coords_dict, fov, opd_map_cache, sigma, pixel_scale):
 
     # Initialize a NIRCam object.
     nrc = webbpsf.NIRCam()
@@ -103,8 +103,8 @@ def simulate_psf(mosaic_coord, exp_cal_coords_dict, fov, opd_map_cache, sigma):
             detector = cal_image_model.meta.instrument.detector
             nrc.detector = detector
             nrc.filter = obs_filter
-            nrc.pixelscale = 0.02 # Pixel scale of the mosaic image. The WebbPSF simulation oversamples the PSF
-                                  # to match the desired pixel scale of the final PSF.
+            nrc.pixelscale = pixel_scale # Pixel scale of the mosaic image. The WebbPSF simulation oversamples the PSF
+                                         # to match the desired pixel scale of the final PSF.
 
             # Loads the OPD map, either through an API call or through the cache.
             load_opd_map(nrc, obs_date, opd_map_cache)
@@ -288,6 +288,7 @@ def main():
     # Gaussian smoothing kernel sigma - user specified. A value around 0.8 has proven to be applicable to
     # multiple observations. 
     sigma = 0.79
+    pixel_scale = 0.02
 
     # For efficiency, only access data on rank 0 (one process), then broadcast the information to other processes.
     if rank == 0:
@@ -323,7 +324,7 @@ def main():
     # For each subgroup, run the simulation.
     for i, mosaic_coord in enumerate(coords):
         psfs[i,:,:] = simulate_psf(mosaic_coord=mosaic_coord, exp_cal_coords_dict=exp_cal_coords_dict, fov=dimension, 
-                                   opd_map_cache=opd_map_cache, sigma=sigma)
+                                   opd_map_cache=opd_map_cache, sigma=sigma, pixel_scale=pixel_scale)
         print(f'[{current_time_string()}] PSF completed for coordinate {mosaic_coord}')
 
     all_psf_results = comm.gather(psfs, root=0) # Gather the simulations from different processes.

@@ -252,18 +252,6 @@ def assign_coordinates(mosaic_gal_coord, mosaic_context, mosaic_wcs, json_path):
     # coordinate. Each entry has the aforementioned information. 
     return exp_cal_coords_dict
 
-# This method splits the mosaic coordinates into subgroups to be used with MPI.
-def split_coords(mosaic_gal_coord):
-
-    num_pairs = len(mosaic_gal_coord)
-    pairs_per_process = num_pairs // size
-    start = rank * pairs_per_process
-    end = start + pairs_per_process if rank != size - 1 else num_pairs
-    coords = mosaic_gal_coord[start:end, :] # Switched to be slicing through different rows instead of columns based on array 
-                                            # setup. May need to be changed depending on whether transposition (.T) is used. 
-    
-    return coords
-
 # Main function for PSF calculation
 def main():
     
@@ -308,17 +296,19 @@ def main():
     coord_idx = rank
     while coord_idx < len(mosaic_gal_coord):
         mosaic_coord = mosaic_gal_coord[coord_idx]
-        psf = simulate_psf(mosaic_coord=mosaic_coord, exp_cal_coords_dict=exp_cal_coords_dict, fov=dimension, opd_map_cache=opd_map_cache, filename_cache=filename_cache, sigma=sigma, pixel_scale=pixel_scale)
-        psfs.append(psf)
+        psf = simulate_psf(mosaic_coord, exp_cal_coords_dict, fov=dimension, opd_map_cache=opd_map_cache, filename_cache=filename_cache, sigma=sigma, pixel_scale=pixel_scale)
+        psfs.append((coord_idx, psf))  # Include the index with the PSF
         print(f'[{current_time_string()} - rank {rank}] PSF completed for coordinate {mosaic_coord}')
         coord_idx += size
-    psfs = np.array(psfs)
+    psfs = np.array(psfs, dtype=object)
     comm.Barrier()
     all_psf_results = comm.gather(psfs, root=0) # Gather the simulations from different processes.
     
     # Concatenate the PSF results from each process and save the PSF model.
     if rank == 0:
-        final_psfs = np.concatenate(all_psf_results, axis=0)
+        
+        final_psfs = sorted(np.concatenate(all_psf_results, axis=0), key=lambda x: x[0])
+        final_psfs = np.array([psf for _, psf in final_psfs])
         fits.writeto(psf_array_filename, final_psfs, overwrite=True)
 
     # Check the execution time. 

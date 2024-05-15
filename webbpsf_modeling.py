@@ -20,7 +20,7 @@ from jwst.resample.resample_utils import decode_context
 
 # Note: installing mpi4py: 
 # $ conda install -c conda-forge mpi4py openmpi
-# mpiexec -n 4 python webbpsf_modeling_final.py
+# mpiexec -n 4 python webbpsf_modeling.py
 
 # Initialize MPI
 comm = MPI.COMM_WORLD
@@ -31,14 +31,27 @@ def current_time_string():
     now = datetime.datetime.now()
     return now.strftime("%H:%M:%S")
 
-# This method allows for the caching of OPD maps so that the process does not need to repeatedly call the API.
-def load_opd_map(nrc, date, opd_map_cache):
-    
-    file_name = None
+# The following two methods allow for the caching of OPD maps so that the process does not need to repeatedly call the API.
+def load_opd_map(nrc, date, opd_map_cache, filename_cache):
     if date not in opd_map_cache:
-        # It is necessary to load new OPD maps on rank 0 initially so that a download error doesn't occur. The comm.Barrier() 
-        # call synchronizes processes.
-        if rank == 0:
+        file_name = filename_cache[date]
+        nrc.load_wss_opd(file_name, plot=False, verbose=False)
+        opd_map_cache[date] = nrc.pupilopd
+    nrc.pupilopd = opd_map_cache[date]
+
+def preload_opd_maps(exp_cal_coords_dict):
+    opd_map_cache = {}
+    filename_cache = {}
+    if rank == 0:
+        print('\nPreloading OPD maps.')
+        dates = set()
+        for exp, coords in exp_cal_coords_dict.items():
+            with ImageModel(f'./cal_files/{exp}') as cal_image_model:
+                obs_date = cal_image_model.meta.observation.date
+                dates.add(obs_date)
+        for date in dates:
+            print(f'[{current_time_string()}] Caching OPD map: {date}')
+            nrc = webbpsf.NIRCam()
             nrc.load_wss_opd_by_date(date, plot=False, verbose=False, choice='before')
             if isinstance(nrc.pupilopd, fits.HDUList):
                 hdu_list = nrc.pupilopd
@@ -46,31 +59,26 @@ def load_opd_map(nrc, date, opd_map_cache):
                 hdu_list = fits.open(nrc.pupilopd)
             else:
                 raise ValueError("Unexpected type for nrc.pupilopd")
-
-            # Access the primary HDU's header
             header = hdu_list[0].header
             corr_id = header['corr_id']
             apername = header['apername']
-
-            home_dir = os.getenv("HOME")
-            opd_map_dir = "webbpsf-data/MAST_JWST_WSS_OPDs" 
-            pattern = f"{home_dir}/{opd_map_dir}/{corr_id}-{apername}*.fits"
+            home_dir = os.getenv('HOME')
+            opd_map_dir = 'webbpsf-data/MAST_JWST_WSS_OPDs'
+            pattern = f'{home_dir}/{opd_map_dir}/{corr_id}-{apername}*.fits'
             matching_files = glob.glob(pattern)
             if matching_files:
                 full_file_path = matching_files[0]
                 file_name = os.path.basename(full_file_path)
-            print(f'[{current_time_string()}] OPD map [{file_name}] cached.\n')
-        comm.Barrier()
-        file_name = comm.bcast(file_name if rank == 0 else None, root=0)
-        nrc.load_wss_opd(file_name, plot=False, verbose=False)
-        opd_map_cache[date] = nrc.pupilopd
-
-    # If the opd map has already been loaded, it is taken from the OPD map cache. 
-    else:
-        nrc.pupilopd = opd_map_cache[date]
+                print(f'[{current_time_string()}] OPD map [{file_name}] cached.\n')
+                nrc.load_wss_opd(file_name, plot=False, verbose=False)
+                opd_map_cache[date] = nrc.pupilopd
+                filename_cache[date] = full_file_path
+        print(f'[{current_time_string()}] All OPD maps loaded.')
+    filename_cache = comm.bcast(filename_cache, root=0)
+    return filename_cache
 
 # Function to simulate PSF for a given coordinate
-def simulate_psf(mosaic_coord, exp_cal_coords_dict, fov, opd_map_cache, sigma, pixel_scale):
+def simulate_psf(mosaic_coord, exp_cal_coords_dict, fov, opd_map_cache, filename_cache, sigma, pixel_scale):
 
     # Initialize a NIRCam object.
     nrc = webbpsf.NIRCam()
@@ -83,7 +91,7 @@ def simulate_psf(mosaic_coord, exp_cal_coords_dict, fov, opd_map_cache, sigma, p
             contributing_exposures.append(exp)
 
     # Show the number of contributing exposures for each coordinate
-    print(f'[{current_time_string()}] Coordinate {mosaic_coord} - number of contributing exposures: {len(contributing_exposures)}')
+    print(f'[{current_time_string()} - rank {rank}] Coordinate {mosaic_coord} - number of contributing exposures: {len(contributing_exposures)}')
     
     # Process each contributing exposure
     for j, exp in enumerate(contributing_exposures):
@@ -107,7 +115,7 @@ def simulate_psf(mosaic_coord, exp_cal_coords_dict, fov, opd_map_cache, sigma, p
                                          # to match the desired pixel scale of the final PSF.
 
             # Loads the OPD map, either through an API call or through the cache.
-            load_opd_map(nrc, obs_date, opd_map_cache)
+            load_opd_map(nrc, obs_date, opd_map_cache, filename_cache)
 
             # This section searches within the exp_cal_coords_dict dictionary to find the entry for this 
             # specific exposure which matches the current mosaic coordinate.
@@ -166,8 +174,8 @@ def image_attributes(mosaic_img_path, catalog_path):
     # Loading coordinates from a catalog file
     cat = ascii.read(catalog_path)
     print(f'Number of coordinates to process: {len(cat)}\n')
-    x_coords = cat['XWIN_IMAGE']-1
-    y_coords = cat['YWIN_IMAGE']-1
+    x_coords = cat['xwin']
+    y_coords = cat['ywin']
 
     # Combine the selected coordinates into an array
     mosaic_gal_coord = np.vstack((x_coords, y_coords)).T # Usually selected_ but I want to use all stars for SMACS.
@@ -263,8 +271,8 @@ def main():
 
     # Relevant paths
     img_path = '/path/to/image' # Mosaic image
-    catalog_path = 'path/to/catalog' # Catalog
-    json_path = 'path/to/json' # JSON association file (see "assign_coordinates" method for more information
+    catalog_path = '/path/to/catalog' # Catalog
+    json_path = '/path/to/json' # JSON association file (see "assign_coordinates" method for more information
                                # regarding the requirements for the association file).
 
     # Final model filename.
@@ -287,25 +295,25 @@ def main():
     # Broadcast necessary information from rank 0 to other ranks.
     mosaic_gal_coord = comm.bcast(mosaic_gal_coord, root=0)
     exp_cal_coords_dict = comm.bcast(exp_cal_coords_dict, root=0)
-
-    # Initialize the OPD map cache for each process.
+    filename_cache = preload_opd_maps(exp_cal_coords_dict)
+    comm.Barrier()  # Ensure all ranks wait until OPD maps are preloaded
     opd_map_cache = {}
 
     if rank == 0:
         print(f'[{current_time_string()}] Beginning PSF modeling process...\n')
+    dimension = 31
+    psfs = []
 
-    coords = split_coords(mosaic_gal_coord) # Split coordinates
-    dimension = 31 # PSF stamp dimension
-    psfs = np.zeros((len(coords), dimension, dimension)) # PSF array for each process, it should be a 
-                                                         # 3D array with the axis 0 dimension corresponding 
-                                                         # to the size of the subgroup.
-
-    # For each subgroup, run the simulation.
-    for i, mosaic_coord in enumerate(coords):
-        psfs[i,:,:] = simulate_psf(mosaic_coord=mosaic_coord, exp_cal_coords_dict=exp_cal_coords_dict, fov=dimension, 
-                                   opd_map_cache=opd_map_cache, sigma=sigma, pixel_scale=pixel_scale)
-        print(f'[{current_time_string()}] PSF completed for coordinate {mosaic_coord}')
-
+    # This section computes the PSFs for each coordinate.
+    coord_idx = rank
+    while coord_idx < len(mosaic_gal_coord):
+        mosaic_coord = mosaic_gal_coord[coord_idx]
+        psf = simulate_psf(mosaic_coord=mosaic_coord, exp_cal_coords_dict=exp_cal_coords_dict, fov=dimension, opd_map_cache=opd_map_cache, filename_cache=filename_cache, sigma=sigma, pixel_scale=pixel_scale)
+        psfs.append(psf)
+        print(f'[{current_time_string()} - rank {rank}] PSF completed for coordinate {mosaic_coord}')
+        coord_idx += size
+    psfs = np.array(psfs)
+    comm.Barrier()
     all_psf_results = comm.gather(psfs, root=0) # Gather the simulations from different processes.
     
     # Concatenate the PSF results from each process and save the PSF model.

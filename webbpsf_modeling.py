@@ -5,6 +5,7 @@ import copy as cp
 import os
 os.environ['CRDS_PATH'] = '/path/to/crds_cache' # Replace with the path of your own crds_cache directory
 os.environ['CRDS_SERVER_URL'] = 'https://jwst-crds.stsci.edu'
+os.environ['WEBBPSF_PATH'] = '/path/to/webbpsf-data' # Replace with the path of your webbpsf-data directory if necessary.
 import glob
 import json
 from mpi4py import MPI

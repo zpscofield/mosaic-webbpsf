@@ -174,8 +174,8 @@ def image_attributes(mosaic_img_path, catalog_path):
     # Loading coordinates from a catalog file
     cat = ascii.read(catalog_path)
     print(f'Number of coordinates to process: {len(cat)}\n')
-    x_coords = cat['xwin']
-    y_coords = cat['ywin']
+    x_coords = cat['XWIN_IMAGE']
+    y_coords = cat['YWIN_IMAGE']
 
     # Combine the selected coordinates into an array
     mosaic_gal_coord = np.vstack((x_coords, y_coords)).T # Usually selected_ but I want to use all stars for SMACS.

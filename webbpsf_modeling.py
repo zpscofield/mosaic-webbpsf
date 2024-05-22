@@ -124,7 +124,17 @@ def simulate_psf(mosaic_coord, exp_cal_coords_dict, fov, opd_map_cache, filename
                          if (c['x_mosaic'], c['y_mosaic']) == mosaic_coord_tuple)
             coord_info = exp_cal_coords_dict[exp][index]
             
-            nrc.detector_position = (coord_info['x_cal'], coord_info['y_cal']) # Setting simulation position.
+            # Safety measures in case there there is a case in which a coordinate is negative.
+            if coord_info['x_cal'] < 0 or coord_info['y_cal'] < 0:
+                print(f"Skipping coordinate with negative values: x_cal={coord_info['x_cal']}, y_cal={coord_info['y_cal']}")
+                continue
+
+            try:
+                nrc.detector_position = (coord_info['x_cal'], coord_info['y_cal'])  # Setting simulation position.
+            except ValueError as e:
+                print(f"Error setting detector position with coordinates: x_cal={coord_info['x_cal']}, y_cal={coord_info['y_cal']}")
+                print(f"Error message: {e}")
+                continue
             #nrc.options['charge_diffusion_sigma'] = 0.012
 
             psf = nrc.calc_psf(oversample=1, fov_pixels=fov+6, normalize='exit_pupil')[0].data # PSF calculation

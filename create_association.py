@@ -1,7 +1,7 @@
 import os
 import json
 
-def create_custom_association(filter_dir, output_filename, program, target, instrument, filter, pupil="clear", subarray="full", exp_type="nrc_image"):
+def create_custom_association(exp_dir, output_filename, program, target, instrument, filter, pupil="clear", subarray="full", exp_type="nrc_image"):
     """
     Creates a single custom association file with specified metadata, including all exposures in the directory.
 
@@ -17,7 +17,7 @@ def create_custom_association(filter_dir, output_filename, program, target, inst
     """
     members = []
 
-    for file in os.listdir(filter_dir):
+    for file in os.listdir(exp_dir):
         if file.endswith('.fits'):
             # Assuming all files should be included as science exposures
             members.append({
@@ -56,4 +56,12 @@ def create_custom_association(filter_dir, output_filename, program, target, inst
     with open(output_filename, 'w') as f:
         json.dump(association, f, indent=4)
 
-# It is important to make sure that the filter_dir is filled with exposures of the same filter corresponding to the mosaic image.
+# It is important to make sure that the exp_dir is filled with exposures of the same filter corresponding to the mosaic image.
+exp_dir = './cal_files/' # Or whichever directory your exposures reside in.
+output_filename = 'my_association.json'
+program = 'program_ID'
+target = 'target_ID'
+instrument = 'nircam'
+filter = 'filter'
+
+create_custom_association(exp_dir, output_filename, program, target, instrument, filter, pupil="clear", subarray="full", exp_type="nrc_image")

@@ -1,0 +1,15 @@
+{
+    "img_path": "/path/to/mosaic_image",
+    "catalog_path": "/path/to/catalog",
+    "json_path": "/path/to/association.json",
+    "csv_path": "/path/to/wcs_file.csv",
+    "x_col": "xwin",
+    "y_col": "ywin",
+    "psf_array_filename": "./WebbPSF_model.fits",
+    "sigma": 0.79,
+    "pixel_scale": 0.02,
+    "dimension": 31,
+    "crds_path": "/path/to/crds_cache",
+    "crds_server_url": "https://jwst-crds.stsci.edu",
+    "webbpsf_path": "/path/to/webbpsf-data"
+}

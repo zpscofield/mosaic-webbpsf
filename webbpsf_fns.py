@@ -151,7 +151,7 @@ def preload_opd_maps(wcs_metadata, rank):
         for date in dates:
             print(f'[{current_time_string()}] Caching OPD map: {date}')
             nrc = webbpsf.NIRCam()
-            nrc.load_wss_opd_by_date(date, plot=False, verbose=False, choice='before') # Load the OPD map absed on the date
+            nrc.load_wss_opd_by_date(date, plot=False, verbose=False, choice='closest') # Load the OPD map based on the date
 
             # Open the OPD based on whether it is an HDU list or a path to an OPD map.
             if isinstance(nrc.pupilopd, fits.HDUList):

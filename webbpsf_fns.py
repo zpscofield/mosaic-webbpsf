@@ -256,15 +256,19 @@ def simulate_psf(mosaic_coord, exp_cal_coords_dict, fov, opd_map_cache, filename
         combined_psf += weighted_psf
         total_exposure_time += exposure_time
 
-    combined_psf /= total_exposure_time # Divide by the total exposure time to produce the final PSF.
-    blurred_psf = gaussian_filter(combined_psf, sigma=sigma) # Blur the PSF to account for differences between simulation and observation caused by
-                                                             # detector effects that are not simulated in this case such as charge capacitance,
-                                                             # interpixel capacitance, and dithering. There are options to include these effects,
-                                                             # but they are simple Gaussian smoothing operations that can be done all at once instead
-                                                             # to more closely match the observed PSFs.
-    blurred_psf = blurred_psf / np.sum(blurred_psf) # Normalize the final blurred PSF.
-    
-    return blurred_psf
+    if len(contributing_exposures) > 0:
+        combined_psf /= total_exposure_time # Divide by the total exposure time to produce the final PSF.
+        blurred_psf = gaussian_filter(combined_psf, sigma=sigma) # Blur the PSF to account for differences between simulation and observation caused by
+                                                                # detector effects that are not simulated in this case such as charge capacitance,
+                                                                # interpixel capacitance, and dithering. There are options to include these effects,
+                                                                # but they are simple Gaussian smoothing operations that can be done all at once instead
+                                                                # to more closely match the observed PSFs.
+        blurred_psf = blurred_psf / np.sum(blurred_psf) # Normalize the final blurred PSF.
+        return blurred_psf
+    else:
+        print(f"[{current_time_string()} - rank {rank}] No valid exposures found, returning zero PSF for mosaic_coord: {mosaic_coord}")
+        combined_psf = np.zeros((31,31))
+        return combined_psf
 
 def print_title():
     """

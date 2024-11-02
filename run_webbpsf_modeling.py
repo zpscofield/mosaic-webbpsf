@@ -1,3 +1,9 @@
+# Simulate JWST PSFs for coordinate positions in a mosaic image produced by the JWST pipeline.
+
+__author__ = "Zachary Scofield"
+__version__ = "1.0.0"
+__license__ = "MIT"
+
 """
 Currently, this process only supports mosaic images produced by the JWST pipeline because of how the code handles context images. In the future,
 support will be added for users who used a separate reduction pipeline.

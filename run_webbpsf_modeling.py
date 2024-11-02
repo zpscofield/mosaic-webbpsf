@@ -1,6 +1,6 @@
 # Simulate JWST PSFs for coordinate positions in a mosaic image produced by the JWST pipeline.
 
-__author__ = "Zachary Scofield"
+__author__ = "Zachary P. Scofield"
 __version__ = "1.0.0"
 __license__ = "MIT"
 

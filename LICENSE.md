@@ -22,7 +22,7 @@ SOFTWARE.
 
 ---
 
-This project includes code or functionality derived from [STPSF](https://github.com/JosueFS/stpsf), which is licensed under the BSD 3-Clause License below.
+This project includes code or functionality derived from [STPSF](https://github.com/spacetelescope/stpsf), which is licensed under the BSD 3-Clause License below.
 
 ---
 

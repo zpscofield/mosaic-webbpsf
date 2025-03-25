@@ -38,6 +38,9 @@ Then, the code can be run as follows:
 
 Change *num_proc* to be the desired number of processes to use when running the code. 
 
-This project is licensed under the MIT License.
+## License
 
-All credit for the original STPSF simulation code goes to the original authors.
+This project is licensed under the MIT License. See the [LICENSE](./LICENSE.md) file for full details.
+
+This software includes or extends functionality from [stpsf](https://github.com/spacetelescope/stpsf) (Cha et al.), which is licensed under the BSD 3-Clause License. All credit for the original PSF modeling code goes to the original authors.
+

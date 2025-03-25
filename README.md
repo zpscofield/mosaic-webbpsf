@@ -1,6 +1,8 @@
 # Yonsei Observable UNiverse Group (YOUNG) STPSF Modeling
 
-A streamlined implementation of the STPSF simulation for JWST mosaic images, intended to be used for weak gravitational lensing analysis.
+A streamlined implementation of the STPSF simulation for JWST mosaic images.
+
+Note: This project is not affiliated with the original authors of STPSF.
 
 ## What this WebbPSF implementation does
 

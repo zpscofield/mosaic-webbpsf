@@ -37,3 +37,7 @@ Then, the code can be run as follows:
 - $ mpiexec -n num_proc python run_webbpsf_modeling.py
 
 Change *num_proc* to be the desired number of processes to use when running the code. 
+
+This project is licensed under the MIT License.
+
+All credit for the original STPSF simulation code goes to the original authors.
